@@ -1,0 +1,15 @@
+http:
+  ip:              127.0.0.1
+  port:            8080
+  read_timeout:    30  # Seconds
+  write_timeout:   30  # Seconds
+
+postgresql:
+  username:           myuser          #postgres
+  password:           1               #GCvhFTduk1
+  host:               rdbms.vt        #localhost
+  port:               5432
+  database:           hospital_server #hospital
+  request_timeout:    5               # Seconds
+  connection_timeout: 10              # Seconds
+  shutdown_timeout:   5               # Seconds
