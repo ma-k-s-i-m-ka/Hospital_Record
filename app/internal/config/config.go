@@ -9,6 +9,7 @@ import (
 type Config struct {
 	HTTP struct {
 		IP           string `yaml:"ip" env:"HTTP-IP"`
+		Host         string `yaml:"host" env:"HTTP-HOST"`
 		Port         string `yaml:"port" env:"HTTP-PORT"`
 		ReadTimeout  int    `yaml:"read_timeout" env:"HTTP-READ-TIMEOUT"`
 		WriteTimeout int    `yaml:"write_timeout" env:"HTTP-WRITE-TIMEOUT"`

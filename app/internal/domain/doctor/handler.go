@@ -12,8 +12,11 @@ import (
 )
 
 const (
-	doctorsURL = "/hospitalrecord/doctors"
-	doctorURL  = "/hospitalrecord/doctors/:id"
+	doctorsURL             = "/hospital_record/doctors"
+	doctorsallURL          = "/hospital_record/all_doctors"
+	doctorsAvailableURL    = "/hospital_record/doctors/available/:id"
+	doctorURL              = "/hospital_record/doctors/profile/:id"
+	doctorByPortfolioIdURL = "/hospital_record/doctors/portfolio/:id"
 )
 
 // Handler handles requests specified to user service.
@@ -32,19 +35,20 @@ func NewHandler(logger logger.Logger, doctorService Service) handler.Hand {
 // Register registers new routes for router.
 func (h *Handler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, doctorURL, h.GetDoctorById)
-	router.HandlerFunc(http.MethodGet, doctorURL, h.GetDoctorByPortfolioId)
-	router.HandlerFunc(http.MethodGet, doctorsURL, h.FindAllDoctors)
-	router.HandlerFunc(http.MethodGet, doctorsURL, h.FindAllAvailableDoctors)
-	router.HandlerFunc(http.MethodPost, doctorURL, h.CreateDoctor)
+	router.HandlerFunc(http.MethodGet, doctorByPortfolioIdURL, h.GetDoctorByPortfolioId)
+	router.HandlerFunc(http.MethodGet, doctorsallURL, h.FindAllDoctors)
+	router.HandlerFunc(http.MethodGet, doctorsAvailableURL, h.FindAllAvailableDoctors)
+	router.HandlerFunc(http.MethodPost, doctorsURL, h.CreateDoctor)
 	router.HandlerFunc(http.MethodPut, doctorURL, h.UpdateDoctor)
 	router.HandlerFunc(http.MethodPatch, doctorURL, h.PartiallyUpdateDoctor)
 	router.HandlerFunc(http.MethodDelete, doctorURL, h.DeleteDoctor)
 }
 
 func (h *Handler) GetDoctorById(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("GET DOCTOR BY ID")
+	h.logger.Info("HANDLER: GET DOCTOR BY ID")
 
 	id, err := handler.ReadIdParam64(r)
+	h.logger.Printf("Input: %+v\n", id)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
 		return
@@ -59,14 +63,14 @@ func (h *Handler) GetDoctorById(w http.ResponseWriter, r *http.Request) {
 		response.InternalError(w, err.Error(), "")
 		return
 	}
-
 	response.JSON(w, http.StatusOK, doctor)
 }
 
 func (h *Handler) GetDoctorByPortfolioId(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("GET DOCTOR BY PORTFOLIO ID")
+	h.logger.Info("HANDLER: GET DOCTOR BY PORTFOLIO ID")
 
 	id, err := handler.ReadIdParam64(r)
+	h.logger.Printf("Input: %+v\n", id)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
 		return
@@ -85,6 +89,7 @@ func (h *Handler) GetDoctorByPortfolioId(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) FindAllDoctors(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("HANDLER: GET ALL DOCTORS")
 	doctors, err := h.doctorService.FindAll()
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
@@ -94,6 +99,7 @@ func (h *Handler) FindAllDoctors(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) FindAllAvailableDoctors(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("HANDLER: GET ALL AVAILABLE DOCTORS")
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
@@ -109,10 +115,14 @@ func (h *Handler) FindAllAvailableDoctors(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) CreateDoctor(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("CREATE DOCTOR")
+	h.logger.Info("HANDLER: CREATE DOCTOR")
 
 	var input CreateDoctorDTO
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	user, err := h.doctorService.Create(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrRepeatedPortfolioId) {
@@ -127,18 +137,20 @@ func (h *Handler) CreateDoctor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateDoctor(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("UPDATE DOCTOR")
+	h.logger.Info("HANDLER: UPDATE DOCTOR")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
 		return
 	}
-
 	var input UpdateDoctorDTO
-
 	input.ID = id
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	err = h.doctorService.Update(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -150,7 +162,7 @@ func (h *Handler) UpdateDoctor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PartiallyUpdateDoctor(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("PARTIALLY UPDATE DOCTOR")
+	h.logger.Info("HANDLER: PARTIALLY UPDATE DOCTOR")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -159,9 +171,11 @@ func (h *Handler) PartiallyUpdateDoctor(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var input PartiallyUpdateDoctorDTO
-
 	input.ID = id
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
 	err = h.doctorService.PartiallyUpdate(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -173,7 +187,7 @@ func (h *Handler) PartiallyUpdateDoctor(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) DeleteDoctor(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("DELETE DOCTOR")
+	h.logger.Info("HANDLER: DELETE DOCTOR")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -181,7 +195,7 @@ func (h *Handler) DeleteDoctor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.doctorService.Delete(r.Context(), id)
+	err = h.doctorService.Delete(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
 			response.NotFound(w)

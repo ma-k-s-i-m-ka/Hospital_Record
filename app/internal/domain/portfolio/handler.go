@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	portfoliosURL = "/hospitalrecord/portfolios"
-	portfolioURL  = "/hospitalrecord/portfolios/:id"
+	portfoliosURL = "/hospital_record/portfolios"
+	portfolioURL  = "/hospital_record/portfolios/:id"
 )
 
 // Handler handles requests specified to user service.
@@ -60,21 +60,24 @@ func (h *Handler) GetPortfolioById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreatePortfolio(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("CREATE PORTFOLIO")
+	h.logger.Info("HANDLER: CREATE PORTFOLIO")
 
 	var input CreatePortfolioDTO
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	portfolio, err := h.portfolioService.Create(r.Context(), &input)
 	if err != nil {
 		response.InternalError(w, fmt.Sprintf("cannot create portfolio: %v", err), "")
 		return
 	}
-
 	response.JSON(w, http.StatusCreated, portfolio)
 }
 
 func (h *Handler) UpdatePortfolio(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("UPDATE PORTFOLIO")
+	h.logger.Info("HANDLER: UPDATE PORTFOLIO")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -85,7 +88,11 @@ func (h *Handler) UpdatePortfolio(w http.ResponseWriter, r *http.Request) {
 	var input UpdatePortfolioDTO
 
 	input.ID = id
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	err = h.portfolioService.Update(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -97,7 +104,7 @@ func (h *Handler) UpdatePortfolio(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeletePortfolio(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("DELETE PORTFOLIO")
+	h.logger.Info("HANDLER: DELETE PORTFOLIO")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -105,7 +112,7 @@ func (h *Handler) DeletePortfolio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.portfolioService.Delete(r.Context(), id)
+	err = h.portfolioService.Delete(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
 			response.NotFound(w)

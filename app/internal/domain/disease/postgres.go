@@ -27,16 +27,14 @@ func NewStorage(storage *pgx.Conn, requestTimeout int) Storage {
 }
 
 func (d *DiseaseStorage) Create(disease *Disease) (*Disease, error) {
-
+	d.logger.Info("POSTGRES: CREATE DISEASE")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
 	row := d.conn.QueryRow(ctx,
 		`INSERT INTO disease (body_part, description)
 			 VALUES($1,$2) 
 			 RETURNING id`,
 		disease.BodyPart, disease.Description)
-
 	err := row.Scan(&disease.ID)
 	if err != nil {
 		err = fmt.Errorf("failed to execute create disease query: %v", err)
@@ -47,7 +45,7 @@ func (d *DiseaseStorage) Create(disease *Disease) (*Disease, error) {
 }
 
 func (d *DiseaseStorage) FindById(id int64) (*Disease, error) {
-
+	d.logger.Info("POSTGRES: GET DISEASE BY ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -74,7 +72,7 @@ func (d *DiseaseStorage) FindById(id int64) (*Disease, error) {
 }
 
 func (d *DiseaseStorage) Update(disease *UpdateDiseaseDTO) error {
-
+	d.logger.Info("POSTGRES: UPDATE DISEASE")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -100,7 +98,7 @@ func (d *DiseaseStorage) Update(disease *UpdateDiseaseDTO) error {
 }
 
 func (d *DiseaseStorage) Delete(id int64) error {
-
+	d.logger.Info("POSTGRES: DELETE DISEASE")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 

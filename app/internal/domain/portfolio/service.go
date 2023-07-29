@@ -11,7 +11,7 @@ type Service interface {
 	Create(ctx context.Context, input *CreatePortfolioDTO) (*Portfolio, error)
 	GetById(ctx context.Context, id int64) (*Portfolio, error)
 	Update(ctx context.Context, portfolio *UpdatePortfolioDTO) error
-	Delete(ctx context.Context, id int64) error
+	Delete(id int64) error
 }
 type service struct {
 	logger  logger.Logger
@@ -26,6 +26,7 @@ func NewService(storage Storage, logger logger.Logger) Service {
 }
 
 func (s *service) Create(ctx context.Context, input *CreatePortfolioDTO) (*Portfolio, error) {
+	s.logger.Info("SERVICE: CREATE PORTFOLIO")
 	portf := Portfolio{
 		Education:      input.Education,
 		Awards:         input.Awards,
@@ -40,6 +41,7 @@ func (s *service) Create(ctx context.Context, input *CreatePortfolioDTO) (*Portf
 }
 
 func (s *service) GetById(ctx context.Context, id int64) (*Portfolio, error) {
+	s.logger.Info("SERVICE: GET PORTFOLIO BY ID")
 	portfolio, err := s.storage.FindById(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -52,14 +54,14 @@ func (s *service) GetById(ctx context.Context, id int64) (*Portfolio, error) {
 }
 
 func (s *service) Update(ctx context.Context, portfolio *UpdatePortfolioDTO) error {
-	_, err := s.GetById(ctx, portfolio.ID)
+	s.logger.Info("SERVICE: UPDATE PORTFOLIO")
+	_, err := s.storage.FindById(portfolio.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get portfolio: %v", err)
 		}
 		return err
 	}
-
 	err = s.storage.Update(portfolio)
 	if err != nil {
 		s.logger.Errorf("failed to update portfolio: %v", err)
@@ -68,7 +70,8 @@ func (s *service) Update(ctx context.Context, portfolio *UpdatePortfolioDTO) err
 	return nil
 }
 
-func (s *service) Delete(ctx context.Context, id int64) error {
+func (s *service) Delete(id int64) error {
+	s.logger.Info("SERVICE: DELETE PORTFOLIO")
 	err := s.storage.Delete(id)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {

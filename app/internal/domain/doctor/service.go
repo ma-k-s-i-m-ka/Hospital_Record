@@ -15,7 +15,7 @@ type Service interface {
 	GetByPortfolioId(ctx context.Context, id int64) (*Doctor, error)
 	Update(ctx context.Context, doctor *UpdateDoctorDTO) error
 	PartiallyUpdate(ctx context.Context, doctor *PartiallyUpdateDoctorDTO) error
-	Delete(ctx context.Context, id int64) error
+	Delete(id int64) error
 }
 
 type service struct {
@@ -30,8 +30,9 @@ func NewService(storage Storage, logger logger.Logger) Service {
 	}
 }
 
-func (s *service) Create(ctx context.Context, d *CreateDoctorDTO) (*Doctor, error) {
-	checkPortfolioID, err := s.storage.FindByPortfolioId(d.PortfolioID)
+func (s *service) Create(ctx context.Context, input *CreateDoctorDTO) (*Doctor, error) {
+	s.logger.Info("SERVICE: CREATE DOCTOR")
+	checkPortfolioID, err := s.storage.FindByPortfolioId(input.PortfolioID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrNotFound) {
 			return nil, err
@@ -42,15 +43,15 @@ func (s *service) Create(ctx context.Context, d *CreateDoctorDTO) (*Doctor, erro
 		return nil, apperror.ErrRepeatedPortfolioId
 	}
 	doc := Doctor{
-		Name:             d.Name,
-		Surname:          d.Surname,
-		Patronymic:       d.Patronymic,
-		ImageID:          d.ImageID,
-		Gender:           d.Gender,
-		Rating:           d.Rating,
-		Age:              d.Age,
-		SpecializationID: d.SpecializationID,
-		PortfolioID:      d.PortfolioID,
+		Name:                 input.Name,
+		Surname:              input.Surname,
+		ImageID:              input.ImageID,
+		Gender:               input.Gender,
+		Rating:               input.Rating,
+		Age:                  input.Age,
+		RecordingIsAvailable: input.RecordingIsAvailable,
+		SpecializationID:     input.SpecializationID,
+		PortfolioID:          input.PortfolioID,
 	}
 	doctor, err := s.storage.Create(&doc)
 	if err != nil {
@@ -60,6 +61,7 @@ func (s *service) Create(ctx context.Context, d *CreateDoctorDTO) (*Doctor, erro
 }
 
 func (s *service) FindAll() (*[]Doctor, error) {
+	s.logger.Info("SERVICE: GET ALL DOCTORS")
 	doctor, err := s.storage.FindAll()
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -69,10 +71,10 @@ func (s *service) FindAll() (*[]Doctor, error) {
 		return nil, err
 	}
 	return &doctor, nil
-	//TODO
 }
 
 func (s *service) FindAllAvailable(ctx context.Context, id int64, recordingIsAvailable bool) (*[]Doctor, error) {
+	s.logger.Info("SERVICE: GET ALL AVAILABLE DOCTORS")
 	doctor, err := s.storage.FindAllAvailable(id, recordingIsAvailable)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -82,10 +84,11 @@ func (s *service) FindAllAvailable(ctx context.Context, id int64, recordingIsAva
 		return nil, err
 	}
 	return &doctor, nil
-	//TODO
 }
 
 func (s *service) GetById(ctx context.Context, id int64) (*Doctor, error) {
+	s.logger.Info("SERVICE: GET DOCTOR BY ID")
+	s.logger.Printf("Input: %+v\n", id)
 	doctor, err := s.storage.FindById(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -98,6 +101,7 @@ func (s *service) GetById(ctx context.Context, id int64) (*Doctor, error) {
 }
 
 func (s *service) GetByPortfolioId(ctx context.Context, id int64) (*Doctor, error) {
+	s.logger.Info("SERVICE: GET DOCTOR BY PORTFOLIO ID")
 	doctor, err := s.storage.FindByPortfolioId(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -110,7 +114,8 @@ func (s *service) GetByPortfolioId(ctx context.Context, id int64) (*Doctor, erro
 }
 
 func (s *service) Update(ctx context.Context, doctor *UpdateDoctorDTO) error {
-	_, err := s.GetById(ctx, doctor.ID)
+	s.logger.Info("SERVICE: UPDATE DOCTOR")
+	_, err := s.storage.FindById(doctor.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get doctor: %v", err)
@@ -127,7 +132,8 @@ func (s *service) Update(ctx context.Context, doctor *UpdateDoctorDTO) error {
 }
 
 func (s *service) PartiallyUpdate(ctx context.Context, doctor *PartiallyUpdateDoctorDTO) error {
-	_, err := s.GetById(ctx, doctor.ID)
+	s.logger.Info("SERVICE: PARTIALLY UPDATE DOCTOR")
+	_, err := s.storage.FindById(doctor.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get doctor: %v", err)
@@ -143,7 +149,8 @@ func (s *service) PartiallyUpdate(ctx context.Context, doctor *PartiallyUpdateDo
 	return nil
 }
 
-func (s *service) Delete(ctx context.Context, id int64) error {
+func (s *service) Delete(id int64) error {
+	s.logger.Info("SERVICE: DELETE DOCTOR")
 	err := s.storage.Delete(id)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {

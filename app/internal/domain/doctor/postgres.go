@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,16 +29,15 @@ func NewStorage(storage *pgx.Conn, requestTimeout int) Storage {
 }
 
 func (d *DoctorStorage) Create(doctor *Doctor) (*Doctor, error) {
-
+	d.logger.Info("POSTGRES: CREATE DOCTOR")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
+	imageID := strconv.FormatInt(doctor.ImageID, 10)
 	row := d.conn.QueryRow(ctx,
 		`INSERT INTO doctors (name, surname, image_id, gender, rating, age,recording_is_available, specialization_id, portfolio_id)
 			 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) 
 			 RETURNING id`,
-		doctor.Name, doctor.Surname, doctor.ImageID, doctor.Gender, doctor.Rating, doctor.Age, doctor.RecordingIsAvailable, doctor.SpecializationID, doctor.PortfolioID)
-
+		doctor.Name, doctor.Surname, imageID, doctor.Gender, doctor.Rating, doctor.Age, doctor.RecordingIsAvailable, doctor.SpecializationID, doctor.PortfolioID)
 	err := row.Scan(&doctor.ID)
 	if err != nil {
 		err = fmt.Errorf("failed to execute create doctor query: %v", err)
@@ -48,12 +48,12 @@ func (d *DoctorStorage) Create(doctor *Doctor) (*Doctor, error) {
 }
 
 func (d *DoctorStorage) FindAll() ([]Doctor, error) {
-
+	d.logger.Info("POSTGRES: GET ALL DOCTORS")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
 	rows, err := d.conn.Query(ctx,
-		`SELECT * FROM doctor`)
+		`SELECT * FROM doctors`)
 	if err != nil {
 		err = fmt.Errorf("failed to SELLECT: %v", err)
 		d.logger.Error(err)
@@ -86,12 +86,12 @@ func (d *DoctorStorage) FindAll() ([]Doctor, error) {
 }
 
 func (d *DoctorStorage) FindAllAvailable(id int64, recordingIsAvailable bool) ([]Doctor, error) {
-
+	d.logger.Info("POSTGRES: GET ALL AVAILABLE DOCTORS")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
 	rows, err := d.conn.Query(ctx,
-		`SELECT * FROM doctor
+		`SELECT * FROM doctors
 			 WHERE specialization_id=$1 AND recording_is_available=$2`,
 		id, recordingIsAvailable)
 	if err != nil {
@@ -126,16 +126,14 @@ func (d *DoctorStorage) FindAllAvailable(id int64, recordingIsAvailable bool) ([
 }
 
 func (d *DoctorStorage) FindByPortfolioId(id int64) (*Doctor, error) {
-
+	d.logger.Info("POSTGRES: GET DOCTOR BY PORTFOLIO ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
 	row := d.conn.QueryRow(ctx,
-		`SELECT * FROM doctor
+		`SELECT * FROM doctors
 			 WHERE portfolio_id = $1`, id)
 
 	doctor := &Doctor{}
-
 	err := row.Scan(
 		&doctor.ID, &doctor.Name, &doctor.Surname, &doctor.Patronymic, &doctor.ImageID, &doctor.Gender,
 		&doctor.Rating, &doctor.Age, &doctor.RecordingIsAvailable, &doctor.SpecializationID, &doctor.PortfolioID,
@@ -143,9 +141,9 @@ func (d *DoctorStorage) FindByPortfolioId(id int64) (*Doctor, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperror.ErrEmptyString
+			return nil, apperror.ErrNotFound
 		}
-		err = fmt.Errorf("failed to execute find user by portfolioid query: %v", err)
+		err = fmt.Errorf("failed to execute find user by portfolio id query: %v", err)
 		d.logger.Error(err)
 		return nil, err
 	}
@@ -154,21 +152,21 @@ func (d *DoctorStorage) FindByPortfolioId(id int64) (*Doctor, error) {
 }
 
 func (d *DoctorStorage) FindById(id int64) (*Doctor, error) {
-
+	d.logger.Info("POSTGRES: GET DOCTOR BY ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
+	d.logger.Printf("Input: %+v\n", id)
 	row := d.conn.QueryRow(ctx,
-		`SELECT * FROM doctor
+		`SELECT * FROM doctors
 			 WHERE id = $1`, id)
 
 	doctor := &Doctor{}
-
 	err := row.Scan(
-		&doctor.ID, &doctor.Name, &doctor.Surname, &doctor.Patronymic, &doctor.ImageID, &doctor.Gender,
-		&doctor.Rating, &doctor.Age, &doctor.RecordingIsAvailable, &doctor.SpecializationID, &doctor.PortfolioID,
+		&doctor.ID, &doctor.Name, &doctor.Surname, &doctor.Patronymic,
+		&doctor.ImageID, &doctor.Gender, &doctor.Rating, &doctor.Age,
+		&doctor.RecordingIsAvailable, &doctor.SpecializationID,
+		&doctor.PortfolioID,
 	)
-
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, apperror.ErrEmptyString
@@ -182,7 +180,7 @@ func (d *DoctorStorage) FindById(id int64) (*Doctor, error) {
 }
 
 func (d *DoctorStorage) Update(doctor *UpdateDoctorDTO) error {
-
+	d.logger.Info("POSTGRES: UPDATE DOCTOR")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -208,7 +206,7 @@ func (d *DoctorStorage) Update(doctor *UpdateDoctorDTO) error {
 }
 
 func (d *DoctorStorage) PartiallyUpdate(doctor *PartiallyUpdateDoctorDTO) error {
-
+	d.logger.Info("POSTGRES: PARTIALLY UPDATE DOCTOR")
 	values := make([]string, 0)
 	args := make([]interface{}, 0)
 	argId := 1
@@ -226,13 +224,13 @@ func (d *DoctorStorage) PartiallyUpdate(doctor *PartiallyUpdateDoctorDTO) error 
 	}
 
 	if doctor.RecordingIsAvailable != nil {
-		values = append(values, fmt.Sprintf("record=$%d", argId))
+		values = append(values, fmt.Sprintf("recording_is_available=$%d", argId))
 		args = append(args, *doctor.RecordingIsAvailable)
 		argId++
 	}
 
 	valuesQuery := strings.Join(values, ", ")
-	query := fmt.Sprintf("UPDATE doctor  SET %s WHERE id = $%d", valuesQuery, argId)
+	query := fmt.Sprintf("UPDATE doctors  SET %s WHERE id = $%d", valuesQuery, argId)
 	args = append(args, doctor.ID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
@@ -250,7 +248,7 @@ func (d *DoctorStorage) PartiallyUpdate(doctor *PartiallyUpdateDoctorDTO) error 
 }
 
 func (d *DoctorStorage) Delete(id int64) error {
-
+	d.logger.Info("POSTGRES: DELETE DOCTOR")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 

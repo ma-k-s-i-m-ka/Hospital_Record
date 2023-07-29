@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	diseasesURL = "/hospitalrecord/diseases"
-	diseaseURL  = "/hospitalrecord/diseases/:id"
+	diseasesURL = "/hospital_record/diseases"
+	diseaseURL  = "/hospital_record/diseases/:id"
 )
 
 // Handler handles requests specified to user service.
@@ -38,8 +38,7 @@ func (h *Handler) Register(router *httprouter.Router) {
 }
 
 func (h *Handler) GetDiseaseById(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("GET DISEASE BY ID")
-
+	h.logger.Info("HANDLER: GET DISEASE BY ID")
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
@@ -55,37 +54,39 @@ func (h *Handler) GetDiseaseById(w http.ResponseWriter, r *http.Request) {
 		response.InternalError(w, err.Error(), "")
 		return
 	}
-
 	response.JSON(w, http.StatusOK, disease)
 }
 
 func (h *Handler) CreateDisease(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("CREATE DISEASE")
-
+	h.logger.Info("HANDLER: CREATE DISEASE")
 	var input CreateDiseaseDTO
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	disease, err := h.diseasesService.Create(r.Context(), &input)
 	if err != nil {
 		response.InternalError(w, fmt.Sprintf("cannot create disease: %v", err), "")
 		return
 	}
-
 	response.JSON(w, http.StatusCreated, disease)
 }
 
 func (h *Handler) UpdateDisease(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("UPDATE DISEASE")
-
+	h.logger.Info("HANDLER: UPDATE DISEASE")
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
 		return
 	}
-
 	var input UpdateDiseaseDTO
-
 	input.ID = id
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	err = h.diseasesService.Update(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -97,15 +98,13 @@ func (h *Handler) UpdateDisease(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteDisease(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("DELETE DISEASE")
-
+	h.logger.Info("HANDLER: DELETE DISEASE")
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
 		response.BadRequest(w, err.Error(), "")
 		return
 	}
-
-	err = h.diseasesService.Delete(r.Context(), id)
+	err = h.diseasesService.Delete(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
 			response.NotFound(w)

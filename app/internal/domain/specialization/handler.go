@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	specializationsURL = "/hospitalrecord/specializations"
-	specializationURL  = "/hospitalrecord/specializations/:id"
+	specializationsURL = "/hospital_record/specializations"
+	specializationURL  = "/hospital_record/specializations/:id"
 )
 
 // Handler handles requests specified to user service.
@@ -38,7 +38,7 @@ func (h *Handler) Register(router *httprouter.Router) {
 }
 
 func (h *Handler) GetSpecializationById(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("GET SPECIALIZATION BY ID")
+	h.logger.Info("HANDLER: GET SPECIALIZATION BY ID")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -60,10 +60,14 @@ func (h *Handler) GetSpecializationById(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) CreateSpecialization(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("CREATE SPECIALIZATION")
+	h.logger.Info("HANDLER: CREATE SPECIALIZATION")
 
 	var input CreateSpecializationDTO
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	specialization, err := h.specializationService.Create(r.Context(), &input)
 	if err != nil {
 		response.InternalError(w, fmt.Sprintf("cannot create specialization: %v", err), "")
@@ -74,7 +78,7 @@ func (h *Handler) CreateSpecialization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateSpecialization(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("UPDATE SPECIALIZATION")
+	h.logger.Info("HANDLER: UPDATE SPECIALIZATION")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -85,7 +89,11 @@ func (h *Handler) UpdateSpecialization(w http.ResponseWriter, r *http.Request) {
 	var input UpdateSpecializationDTO
 
 	input.ID = id
-
+	if err := response.ReadJSON(w, r, &input); err != nil {
+		response.BadRequest(w, err.Error(), apperror.ErrInvalidRequestBody.Error())
+		return
+	}
+	h.logger.Printf("Input: %+v\n", &input)
 	err = h.specializationService.Update(r.Context(), &input)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -97,7 +105,7 @@ func (h *Handler) UpdateSpecialization(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteSpecialization(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("DELETE SPECIALIZATION")
+	h.logger.Info("HANDLER: DELETE SPECIALIZATION")
 
 	id, err := handler.ReadIdParam64(r)
 	if err != nil {
@@ -105,7 +113,7 @@ func (h *Handler) DeleteSpecialization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.specializationService.Delete(r.Context(), id)
+	err = h.specializationService.Delete(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
 			response.NotFound(w)

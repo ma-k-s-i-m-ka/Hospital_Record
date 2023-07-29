@@ -27,7 +27,7 @@ func NewStorage(storage *pgx.Conn, requestTimeout int) Storage {
 }
 
 func (d *SpecializationStorage) Create(specialization *Specialization) (*Specialization, error) {
-
+	d.logger.Info("POSTGRES: CREATE SPECIALIZATION")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -47,7 +47,7 @@ func (d *SpecializationStorage) Create(specialization *Specialization) (*Special
 }
 
 func (d *SpecializationStorage) FindById(id int64) (*Specialization, error) {
-
+	d.logger.Info("POSTGRES: GET SPECIALIZATION BY ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -74,7 +74,7 @@ func (d *SpecializationStorage) FindById(id int64) (*Specialization, error) {
 }
 
 func (d *SpecializationStorage) Update(specialization *UpdateSpecializationDTO) error {
-
+	d.logger.Info("POSTGRES: UPDATE SPECIALIZATION")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 

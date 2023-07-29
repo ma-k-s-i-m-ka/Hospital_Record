@@ -27,7 +27,7 @@ func NewStorage(storage *pgx.Conn, requestTimeout int) Storage {
 }
 
 func (d *PortfolioStorage) Create(portfolio *Portfolio) (*Portfolio, error) {
-
+	d.logger.Info("POSTGRES: CREATE PORTFOLIO")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 	row := d.conn.QueryRow(ctx,
@@ -46,7 +46,7 @@ func (d *PortfolioStorage) Create(portfolio *Portfolio) (*Portfolio, error) {
 }
 
 func (d *PortfolioStorage) FindById(id int64) (*Portfolio, error) {
-
+	d.logger.Info("POSTGRES: GET PORTFOLIO BY ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -73,7 +73,7 @@ func (d *PortfolioStorage) FindById(id int64) (*Portfolio, error) {
 }
 
 func (d *PortfolioStorage) Update(portfolio *UpdatePortfolioDTO) error {
-
+	d.logger.Info("POSTGRES: UPDATE PORTFOLIO")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -99,7 +99,7 @@ func (d *PortfolioStorage) Update(portfolio *UpdatePortfolioDTO) error {
 }
 
 func (d *PortfolioStorage) Delete(id int64) error {
-
+	d.logger.Info("POSTGRES: DELETE PORTFOLIO")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 

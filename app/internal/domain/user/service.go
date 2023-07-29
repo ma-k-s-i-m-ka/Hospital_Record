@@ -5,6 +5,7 @@ import (
 	"HospitalRecord/app/pkg/logger"
 	"context"
 	"errors"
+	"fmt"
 )
 
 type Service interface {
@@ -28,8 +29,9 @@ func NewService(storage Storage, logger logger.Logger) Service {
 		storage: storage,
 	}
 }
-func (s *service) Create(ctx context.Context, v *CreateUserDTO) (*User, error) {
-	checkEmail, err := s.storage.FindByEmail(v.Email)
+func (s *service) Create(ctx context.Context, input *CreateUserDTO) (*User, error) {
+	s.logger.Info("SERVICE: CREATE USER")
+	checkEmail, err := s.storage.FindByEmail(input.Email)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrNotFound) {
 			return nil, err
@@ -41,20 +43,20 @@ func (s *service) Create(ctx context.Context, v *CreateUserDTO) (*User, error) {
 	}
 
 	u := User{
-		Email:        v.Email,
-		Name:         v.Name,
-		Surname:      v.Surname,
-		Age:          v.Age,
-		Gender:       v.Gender,
-		Password:     v.Password,
-		PolicyNumber: v.PolicyNumber,
+		Email:        input.Email,
+		Name:         input.Name,
+		Surname:      input.Surname,
+		Age:          input.Age,
+		Gender:       input.Gender,
+		Password:     input.Password,
+		PolicyNumber: input.PolicyNumber,
 	}
-	//TODO
-	/*	err = u.HashPassword()
-		if err != nil {
-			return nil, fmt.Errorf("cannot hash password")
-		}
-	*/
+
+	err = u.HashPassword()
+	if err != nil {
+		return nil, fmt.Errorf("cannot hash password")
+	}
+
 	user, err := s.storage.Create(&u)
 	if err != nil {
 		return nil, err
@@ -63,6 +65,7 @@ func (s *service) Create(ctx context.Context, v *CreateUserDTO) (*User, error) {
 }
 
 func (s *service) GetByEmail(ctx context.Context, email string) (*User, error) {
+	s.logger.Info("SERVICE: GET USER BY EMAIL")
 	user, err := s.storage.FindByEmail(email)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -75,6 +78,7 @@ func (s *service) GetByEmail(ctx context.Context, email string) (*User, error) {
 }
 
 func (s *service) GetById(ctx context.Context, id int64) (*User, error) {
+	s.logger.Info("SERVICE: GET USER BY ID")
 	user, err := s.storage.FindById(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -87,6 +91,7 @@ func (s *service) GetById(ctx context.Context, id int64) (*User, error) {
 }
 
 func (s *service) GetByPolicyNumber(ctx context.Context, policy string) (*User, error) {
+	s.logger.Info("SERVICE: GET USER BY POLICY NUMBER")
 	user, err := s.storage.FindByPolicyNumber(policy)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -99,17 +104,20 @@ func (s *service) GetByPolicyNumber(ctx context.Context, policy string) (*User, 
 }
 
 func (s *service) Update(ctx context.Context, user *UpdateUserDTO) error {
-	_, err := s.GetById(ctx, user.ID)
+	s.logger.Info("SERVICE: UPDATE USER")
+	u, err := s.storage.FindById(user.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get user: %v", err)
 		}
 		return err
 	}
-	//TODO
-	/*if !u.ComparePassword(user.Password) {
-		return apperror.ErrWrongPassword
-	}*/
+	u.Password = user.Password
+	err = user.HashPassword()
+	if err != nil {
+		s.logger.Errorf("failed to hash password: %v", err)
+		return err
+	}
 
 	err = s.storage.Update(user)
 	if err != nil {
@@ -120,7 +128,8 @@ func (s *service) Update(ctx context.Context, user *UpdateUserDTO) error {
 }
 
 func (s *service) PartiallyUpdate(ctx context.Context, user *PartiallyUpdateUserDTO) error {
-	_, err := s.GetById(ctx, user.ID)
+	s.logger.Info("SERVICE: PARTIALLY UPDATE USER")
+	u, err := s.storage.FindById(user.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get user: %v", err)
@@ -128,19 +137,15 @@ func (s *service) PartiallyUpdate(ctx context.Context, user *PartiallyUpdateUser
 		return err
 	}
 
-	/*if !u.ComparePassword(*user.OldPassword) {
-		return apperror.ErrWrongPassword
-	}
-
-	if user.NewPassword != nil {
-		u.Password = *user.NewPassword
+	if user.Password != nil {
+		u.Password = *user.Password
 		err = user.HashPassword()
 		if err != nil {
-			s.logger.Errorf("failed ot hash password: %v", err)
+			s.logger.Errorf("failed to hash password: %v", err)
 			return err
 		}
 	}
-	*/
+
 	err = s.storage.PartiallyUpdate(user)
 	if err != nil {
 		s.logger.Errorf("failed to partially update user: %v", err)
@@ -150,6 +155,7 @@ func (s *service) PartiallyUpdate(ctx context.Context, user *PartiallyUpdateUser
 }
 
 func (s *service) Delete(id int64) error {
+	s.logger.Info("SERVICE: DELETE USER")
 	err := s.storage.Delete(id)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {

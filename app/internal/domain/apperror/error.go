@@ -14,6 +14,7 @@ var (
 	ErrEmptyString         = errors.New("empty string")
 	ErrRepeatedEmail       = errors.New("this email is already in use")
 	ErrRepeatedPortfolioId = errors.New("this specialization id is already in use")
+	ErrInvalidRequestBody  = errors.New("invalid request body")
 )
 
 type AppError struct {

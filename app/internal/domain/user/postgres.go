@@ -28,28 +28,26 @@ func NewStorage(storage *pgx.Conn, requestTimeout int) Storage {
 }
 
 func (d *UserStorage) Create(user *User) (*User, error) {
-
+	d.logger.Info("POSTGRES: CREATE USER")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-	var createdAtStr string
 	row := d.conn.QueryRow(ctx,
 		`INSERT INTO patients (email, name, surname, age, gender, password, policy_number)
 			 VALUES($1,$2,$3,$4,$5,$6,$7) 
-			 RETURNING id, TO_CHAR(created_at, 'DD-MM-YYYY')`,
+			 RETURNING id, created_at`,
 		user.Email, user.Name, user.Surname, user.Age, user.Gender, user.Password, user.PolicyNumber)
 
-	err := row.Scan(&user.ID, &createdAtStr)
+	err := row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		err = fmt.Errorf("failed to execute create user query: %v", err)
 		d.logger.Error(err)
 		return nil, err
 	}
-	user.CreatedAt = createdAtStr
 	return user, nil
 }
 
 func (d *UserStorage) FindByEmail(email string) (*User, error) {
-
+	d.logger.Info("POSTGRES: GET USER BY EMAIL")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -58,7 +56,6 @@ func (d *UserStorage) FindByEmail(email string) (*User, error) {
 			 WHERE email = $1`, email)
 
 	user := &User{}
-
 	err := row.Scan(
 		&user.ID, &user.Email, &user.Name, &user.Surname, &user.Patronymic,
 		&user.Age, &user.Gender, &user.PhoneNumber, &user.Address, &user.Password,
@@ -67,7 +64,7 @@ func (d *UserStorage) FindByEmail(email string) (*User, error) {
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apperror.ErrEmptyString
+			return nil, apperror.ErrNotFound
 		}
 		err = fmt.Errorf("failed to execute find user by email query: %v", err)
 		d.logger.Error(err)
@@ -78,7 +75,7 @@ func (d *UserStorage) FindByEmail(email string) (*User, error) {
 }
 
 func (d *UserStorage) FindById(id int64) (*User, error) {
-
+	d.logger.Info("POSTGRES: GET USER BY ID")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -107,7 +104,7 @@ func (d *UserStorage) FindById(id int64) (*User, error) {
 }
 
 func (d *UserStorage) FindByPolicyNumber(policy string) (*User, error) {
-
+	d.logger.Info("POSTGRES: GET USER BY POLICY NUMBER")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 
@@ -135,10 +132,9 @@ func (d *UserStorage) FindByPolicyNumber(policy string) (*User, error) {
 }
 
 func (d *UserStorage) Update(user *UpdateUserDTO) error {
-
+	d.logger.Info("POSTGRES: UPDATE USER")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
 	result, err := d.conn.Exec(ctx,
 		`UPDATE patients
 			 SET email=$1, name=$2, surname=$3, patronymic=$4, age=$5, gender=$6, phone_number=$7, address=$8, password=$9, policy_number=$10, disease_id=$11
@@ -153,7 +149,6 @@ func (d *UserStorage) Update(user *UpdateUserDTO) error {
 		d.logger.Error(err)
 		return err
 	}
-
 	if result.RowsAffected() == 0 {
 		return apperror.ErrEmptyString
 	}
@@ -161,48 +156,40 @@ func (d *UserStorage) Update(user *UpdateUserDTO) error {
 }
 
 func (d *UserStorage) PartiallyUpdate(user *PartiallyUpdateUserDTO) error {
-
+	d.logger.Info("POSTGRES: PARTIALLY UPDATE USER")
 	values := make([]string, 0)
 	args := make([]interface{}, 0)
 	argId := 1
-
 	if user.Email != nil {
 		values = append(values, fmt.Sprintf("email=$%d", argId))
 		args = append(args, *user.Email)
 		argId++
 	}
-
 	if user.PhoneNumber != nil {
 		values = append(values, fmt.Sprintf("phone_number=$%d", argId))
 		args = append(args, *user.PhoneNumber)
 		argId++
 	}
-
 	if user.Address != nil {
 		values = append(values, fmt.Sprintf("address=$%d", argId))
 		args = append(args, *user.Address)
 		argId++
 	}
-
 	if user.Password != nil {
 		values = append(values, fmt.Sprintf("password=$%d", argId))
 		args = append(args, *user.Password)
 		argId++
 	}
-
 	if user.DiseaseID != nil {
 		values = append(values, fmt.Sprintf("disease_id=$%d", argId))
 		args = append(args, *user.DiseaseID)
 		argId++
 	}
-
 	valuesQuery := strings.Join(values, ", ")
 	query := fmt.Sprintf("UPDATE patients  SET %s WHERE id = $%d", valuesQuery, argId)
 	args = append(args, user.ID)
-
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
-
 	result, err := d.conn.Exec(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to update user partially: %v", err)
@@ -215,7 +202,7 @@ func (d *UserStorage) PartiallyUpdate(user *PartiallyUpdateUserDTO) error {
 }
 
 func (d *UserStorage) Delete(id int64) error {
-
+	d.logger.Info("POSTGRES: DELETE USER")
 	ctx, cancel := context.WithTimeout(context.Background(), d.requestTimeout)
 	defer cancel()
 

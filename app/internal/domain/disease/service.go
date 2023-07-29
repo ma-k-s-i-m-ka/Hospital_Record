@@ -11,7 +11,7 @@ type Service interface {
 	Create(ctx context.Context, input *CreateDiseaseDTO) (*Disease, error)
 	GetById(ctx context.Context, id int64) (*Disease, error)
 	Update(ctx context.Context, disease *UpdateDiseaseDTO) error
-	Delete(ctx context.Context, id int64) error
+	Delete(id int64) error
 }
 
 type service struct {
@@ -27,6 +27,7 @@ func NewService(storage Storage, logger logger.Logger) Service {
 }
 
 func (s *service) Create(ctx context.Context, input *CreateDiseaseDTO) (*Disease, error) {
+	s.logger.Info("SERVICE: CREATE DISEASE")
 	dis := Disease{
 		BodyPart:    input.BodyPart,
 		Description: input.Description,
@@ -40,6 +41,7 @@ func (s *service) Create(ctx context.Context, input *CreateDiseaseDTO) (*Disease
 }
 
 func (s *service) GetById(ctx context.Context, id int64) (*Disease, error) {
+	s.logger.Info("SERVICE: GET DISEASE BY ID")
 	disease, err := s.storage.FindById(id)
 	if err != nil {
 		if errors.Is(err, apperror.ErrEmptyString) {
@@ -52,7 +54,8 @@ func (s *service) GetById(ctx context.Context, id int64) (*Disease, error) {
 }
 
 func (s *service) Update(ctx context.Context, disease *UpdateDiseaseDTO) error {
-	_, err := s.GetById(ctx, disease.ID)
+	s.logger.Info("SERVICE: UPDATE DISEASE")
+	_, err := s.storage.FindById(disease.ID)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
 			s.logger.Errorf("failed to get disease: %v", err)
@@ -67,7 +70,8 @@ func (s *service) Update(ctx context.Context, disease *UpdateDiseaseDTO) error {
 	return nil
 }
 
-func (s *service) Delete(ctx context.Context, id int64) error {
+func (s *service) Delete(id int64) error {
+	s.logger.Info("SERVICE: DELETE DISEASE")
 	err := s.storage.Delete(id)
 	if err != nil {
 		if !errors.Is(err, apperror.ErrEmptyString) {
