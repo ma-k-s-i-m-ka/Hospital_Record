@@ -1,5 +1,4 @@
 DROP TABLE IF EXISTS disease;
-DROP TABLE IF EXISTS prescription;
 DROP TABLE IF EXISTS description;
 DROP TABLE IF EXISTS medications;
 DROP TABLE IF EXISTS supplier;

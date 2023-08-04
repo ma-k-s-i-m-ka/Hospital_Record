@@ -1,4 +1,4 @@
-/*DROP TABLE IF EXISTS patients;
+DROP TABLE IF EXISTS patients;
 DROP TABLE IF EXISTS specialization;
 DROP TABLE IF EXISTS portfolio;
 DROP TABLE IF EXISTS disease;
@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS doctors;
 DROP TABLE IF EXISTS patients_disease;
 DROP TABLE IF EXISTS doctor_specialization_portfolio;
 DROP TABLE IF EXISTS record;
-DROP TABLE IF EXISTS appointment_card;*/
+DROP TABLE IF EXISTS appointment_card;
 
 CREATE TABLE IF NOT EXISTS disease(
  id             bigserial       primary key,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS doctors(
  name                      text           not null,
  surname                   text           not null,
  patronymic                text,
- image_id                  bigint         not null,
+ image_id                  text           not null,
  gender                    text           not null,
  rating                    numeric(2,1)   not null,
  age                       int4           not null,

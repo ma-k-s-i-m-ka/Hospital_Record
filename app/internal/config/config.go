@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+/// Конфигурация приложения \\\
+
 type Config struct {
 	HTTP struct {
 		IP           string `yaml:"ip" env:"HTTP-IP"`
@@ -24,7 +26,15 @@ type Config struct {
 		ConnectionTimeout int    `yaml:"connection_timeout" env-default:"10"`
 		ShutdownTimeout   int    `yaml:"shutdown_timeout" env-default:"5"`
 	} `yaml:"postgresql"`
+	JWT struct {
+		AccessExpirationMinutes int16  `yaml:"access_expiration_minutes"`
+		RefreshExpirationDays   int16  `yaml:"refresh_expiration_days"`
+		AccessTokenSecretKey    string `yaml:"access_token_secret_key"`
+		RefreshTokenSecretKey   string `yaml:"refresh_token_secret_key"`
+	} `yaml:"jwt"`
 }
+
+/// Функция для получения конфигурации приложения из файла config.yml \\\
 
 var instance *Config
 var once sync.Once

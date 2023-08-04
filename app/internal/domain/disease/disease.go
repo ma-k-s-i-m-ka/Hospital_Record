@@ -1,5 +1,7 @@
 package disease
 
+/// Структура для создания и обновления заболеваний \\\
+
 type Disease struct {
 	ID          int64  `json:"id" example:"1567"`
 	BodyPart    string `json:"body_part" example:"hand"`

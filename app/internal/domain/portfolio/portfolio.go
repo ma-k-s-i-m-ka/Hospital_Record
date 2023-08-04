@@ -1,5 +1,7 @@
 package portfolio
 
+/// Структура для создания и обновления портфолио докторов \\\
+
 type Portfolio struct {
 	ID             int64  `json:"id" example:"1567"`
 	Education      string `json:"education" example:"residency Institute of N. I. Pirogov"`

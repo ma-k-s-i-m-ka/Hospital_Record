@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+/// Структура для создания и обновления пациентов \\\
+
 type User struct {
 	ID           int64     `json:"id" example:"1567"`
 	Email        string    `json:"email" example:"petrovmaksim1992@mail.ru"`
@@ -58,6 +60,8 @@ type PartiallyUpdateUserDTO struct {
 	DiseaseID   *[]int64 `json:"disease_id,omitempty" example:"123"`
 }
 
+/// Хэширование паролей \\\
+
 func (u *User) HashPassword() error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -88,4 +92,11 @@ func (u *PartiallyUpdateUserDTO) HashPassword() error {
 	}
 	*u.Password = string(hashedPassword)
 	return nil
+}
+
+/// Проверка введенного пароля на соответсвие паролю пользователя в БД \\\
+
+func (u *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return err == nil
 }

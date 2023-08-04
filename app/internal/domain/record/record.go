@@ -2,6 +2,8 @@ package record
 
 import "time"
 
+/// Структура для создания и обновления записей \\\
+
 type Record struct {
 	ID               int64     `json:"id" example:"1567"`
 	HospitalAddress  string    `json:"hospital_address" example:"Roterta, dom 12"`
