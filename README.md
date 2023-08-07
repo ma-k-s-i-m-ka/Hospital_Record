@@ -16,6 +16,8 @@ The application uses the following auxiliary and replaceable packages at your di
 
 ## Getting Started
   The server works at http://localhost:3000. Optionally, you can change the connection settings of both the server and the database in the config.yml file
+## Testing
+  Tested the application using POSTMAN. Folder with requests [Postman](https://drive.google.com/drive/folders/1Vmrq3W1DxLjh2Qcuo3HNCxI5Ll-u01pM?usp=sharing)
 ## Project Layout
 ```sh
 .
